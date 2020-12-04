@@ -63,7 +63,6 @@ public class Client {
 		try {
 			url = new URL(string_url);
 		} catch (MalformedURLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 			System.err.println("Malformed url, unable to make the request");
 			System.exit(1);
@@ -74,7 +73,6 @@ public class Client {
 		try {
 			con = (HttpsURLConnection)url.openConnection();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 			System.err.println("Unable to make the request");
 			System.exit(1);
@@ -83,7 +81,6 @@ public class Client {
 		try {
 			con.setRequestMethod(method.toUpperCase());
 		} catch (ProtocolException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 			System.err.println("Wrong method");
 			System.exit(1);
@@ -122,7 +119,6 @@ public class Client {
 				osw.close();
 				os.close();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 				System.err.println("Error while writing the body of the request");
 				System.exit(1);
@@ -134,7 +130,6 @@ public class Client {
 		try {
 			print_content(con);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 			System.err.println("Error while reading the response");
 			System.exit(1);
@@ -196,7 +191,6 @@ public class Client {
 			kf = KeyFactory.getInstance("RSA");
 			privateSignature = Signature.getInstance("SHA256withRSA");
 		} catch (NoSuchAlgorithmException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 			System.err.println("No such algorithm");
 			System.exit(1);
@@ -205,7 +199,6 @@ public class Client {
 		try {
 			privateSignature.initSign(kf.generatePrivate(spec));	
 		} catch (InvalidKeyException | InvalidKeySpecException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 			System.err.println("InvalidKeyException or InvalidKeySpecException");
 			System.exit(1);
@@ -215,7 +208,6 @@ public class Client {
 			privateSignature.update(input.getBytes("UTF-8"));
 			s = privateSignature.sign();
 		} catch (SignatureException | UnsupportedEncodingException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 			System.err.println("SignatureException or UnsupportedEncodingException");
 			System.exit(1);
@@ -232,7 +224,6 @@ public class Client {
 		try {
 			digest = MessageDigest.getInstance("SHA-256");
 		} catch (NoSuchAlgorithmException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 			System.err.println("No such algorithm");
 			System.exit(1);		
