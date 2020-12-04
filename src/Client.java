@@ -7,6 +7,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
+import java.net.ProtocolException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -31,11 +32,11 @@ import javax.net.ssl.HttpsURLConnection;
 
 public class Client {
 
-	public static void main(String[] args) throws Exception {
+	public static void main(String[] args) {
 		// Build the basic http request
 		// Manipulate headers to generate the signature
 		// Send request and print response
-	
+		
 		//default method get
 		String method = "get";
 		
@@ -58,12 +59,35 @@ public class Client {
 		
 		String string_url = "https://staging.authservices.satispay.com/wally-services/protocol/tests/signature";
 		
-		URL url = new URL(string_url);
+		URL url = null;
+		try {
+			url = new URL(string_url);
+		} catch (MalformedURLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			System.err.println("Malformed url, unable to make the request");
+			System.exit(1);
+		}
 				
 		//set up http connection
-		HttpsURLConnection con = (HttpsURLConnection)url.openConnection();
+		HttpsURLConnection con = null;
+		try {
+			con = (HttpsURLConnection)url.openConnection();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			System.err.println("Unable to make the request");
+			System.exit(1);
+		}
 		
-		con.setRequestMethod(method.toUpperCase());
+		try {
+			con.setRequestMethod(method.toUpperCase());
+		} catch (ProtocolException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			System.err.println("Wrong method");
+			System.exit(1);
+		}
 		con.setRequestProperty("Host", host);
 		con.setRequestProperty("Date", date);
 			
@@ -89,18 +113,32 @@ public class Client {
 			con.setRequestProperty("Authorization", Authorization);
 			//Write in the body
 			con.setDoOutput(true);
-			OutputStream os = con.getOutputStream();
-			OutputStreamWriter osw = new OutputStreamWriter(os, "UTF-8");    
-			osw.write(body);
-			osw.flush();
-			osw.close();
-			os.close();
+			OutputStream os;
+			try {
+				os = con.getOutputStream();
+				OutputStreamWriter osw = new OutputStreamWriter(os, "UTF-8");    
+				osw.write(body);
+				osw.flush();
+				osw.close();
+				os.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				System.err.println("Error while writing the body of the request");
+				System.exit(1);
+			}
+			
 		}
-		
-		System.out.println("Response code: " + con.getResponseCode());
-		
+			
 		//print response
-		print_content(con);
+		try {
+			print_content(con);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			System.err.println("Error while reading the response");
+			System.exit(1);
+		}
 		
 		con.disconnect();
 		  	
@@ -108,8 +146,10 @@ public class Client {
 	
 	static private void print_content(HttpsURLConnection con) throws IOException{
 		
-	    if(con!=null && con.getResponseCode() == 200){ 
+		int response = con.getResponseCode();
+	    if(con!=null &&  response == 200){ 
 	             
+	       System.out.println("Response code: " + response);
 	       System.out.println("Response:");			
 	       BufferedReader br = new BufferedReader(new InputStreamReader(con.getInputStream()));
 	                
@@ -124,8 +164,8 @@ public class Client {
 	        
 	   }
 	
-	static private String sign(String input) throws NoSuchAlgorithmException, InvalidKeyException, InvalidKeySpecException, SignatureException, UnsupportedEncodingException {
-		
+	static private String sign(String input)  {
+		//throws NoSuchAlgorithmException, InvalidKeyException, InvalidKeySpecException, SignatureException, UnsupportedEncodingException
 		String key = "";
 		String file =  "Resources/client-rsa-private-key.pem";
 		//read from file
@@ -137,6 +177,8 @@ public class Client {
 		}
 		catch (FileNotFoundException e) {
 			e.printStackTrace();
+			System.err.println("Not found " + file + "file");
+			System.exit(1);
 		}
 				
 		String ris = "";
@@ -145,25 +187,56 @@ public class Client {
 		
 		//Decode base64
 		byte[] b1 = Base64.getDecoder().decode(k);
-		byte[] s;
+		byte[] s = null;
 		
 		PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(b1);
-		KeyFactory kf = KeyFactory.getInstance("RSA");
+		KeyFactory kf = null;
+		Signature privateSignature = null;
+		try {
+			kf = KeyFactory.getInstance("RSA");
+			privateSignature = Signature.getInstance("SHA256withRSA");
+		} catch (NoSuchAlgorithmException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			System.err.println("No such algorithm");
+			System.exit(1);
+		}
 		
-		Signature privateSignature = Signature.getInstance("SHA256withRSA");
-		privateSignature.initSign(kf.generatePrivate(spec));
-		privateSignature.update(input.getBytes("UTF-8"));
-		s = privateSignature.sign();
+		try {
+			privateSignature.initSign(kf.generatePrivate(spec));	
+		} catch (InvalidKeyException | InvalidKeySpecException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			System.err.println("InvalidKeyException or InvalidKeySpecException");
+			System.exit(1);
+		}
 		
-        
+		try {
+			privateSignature.update(input.getBytes("UTF-8"));
+			s = privateSignature.sign();
+		} catch (SignatureException | UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			System.err.println("SignatureException or UnsupportedEncodingException");
+			System.exit(1);
+		}
+
         //Encode to base64 and return
         return Base64.getEncoder().encodeToString(s);
         
 	}
 	
-	static private String calcDigest(String data) throws NoSuchAlgorithmException {
+	static private String calcDigest(String data){
 		
-		MessageDigest digest = MessageDigest.getInstance("SHA-256");
+		MessageDigest digest = null;
+		try {
+			digest = MessageDigest.getInstance("SHA-256");
+		} catch (NoSuchAlgorithmException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			System.err.println("No such algorithm");
+			System.exit(1);		
+		}
 		byte[] hash = digest.digest(data.getBytes(StandardCharsets.UTF_8));
 		
 		return Base64.getEncoder().encodeToString(hash);
